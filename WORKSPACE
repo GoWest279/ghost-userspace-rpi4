@@ -61,11 +61,15 @@ http_archive(
 )
 
 # A dependency of rocksdb that is required for rocksdb::ClockCache.
-http_archive(
-    name = "tbb",
-    url = "https://github.com/oneapi-src/oneTBB/archive/d1667d514df697f05d771602b268e92560c434c4.tar.gz",
-    sha256 = "b5936aac1ffbc3767cae2377199647d663159a597f8e5958c5979bbf3b8d6384",
-    strip_prefix = "oneTBB-d1667d514df697f05d771602b268e92560c434c4",
+#http_archive(
+#    name = "tbb",
+#    url = "https://github.com/oneapi-src/oneTBB/archive/d1667d514df697f05d771602b268e92560c434c4.tar.gz",
+#    sha256 = "b5936aac1ffbc3767cae2377199647d663159a597f8e5958c5979bbf3b8d6384",
+#    strip_prefix = "oneTBB-d1667d514df697f05d771602b268e92560c434c4",
+#)
+local_repository(
+	name = "tbb",
+    path = "tbb/",
 )
 
 http_archive(

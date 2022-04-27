@@ -690,7 +690,7 @@ cc_library(
         "include/rocksdb/write_batch_base.h",
         "include/rocksdb/write_buffer_manager.h",
     ],
-    copts = ["-msse4.2"],
+ #   copts = ["-msse4.2"],
     includes = [
         ".",
         "include",

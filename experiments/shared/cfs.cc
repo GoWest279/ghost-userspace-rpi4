@@ -46,7 +46,8 @@ void CompletelyFairScheduler::WaitUntilRunnable(uint32_t sid) const {
   const std::unique_ptr<std::atomic<int>>& r = runnability_[sid];
   if (wait_type_ == WaitType::kWaitSpin) {
     while (r->load(std::memory_order_acquire) == 0) {
-      asm volatile("pause");
+      asm volatile("yield");
+      //asm volatile("pause");
     }
   } else {
     CHECK_EQ(wait_type_, WaitType::kWaitFutex);

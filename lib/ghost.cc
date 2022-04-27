@@ -139,12 +139,14 @@ bool Ghost::GhostIsMountedAt(const char* path) {
 
 // static
 void Ghost::MountGhostfs() {
-  if (mount("ghost", Ghost::kGhostfsMount, "ghost", 0, nullptr)) {
+    int res =(mount("ghost", Ghost::kGhostfsMount, "ghost", 0, nullptr)); 
+  if (res) {
     // EBUSY means it is already mounted. Anything else is failure. This CHECK
     // is generally triggered when you forget to compile ghOSt into the kernel,
     // such as by neglecting to set the Linux config option
     // `CONFIG_SCHED_CLASS_GHOST` to `y` in the Linux `.config` file.
-    CHECK_EQ(errno, EBUSY);
+    	printf("%s\n", Ghost::kGhostfsMount);
+	  CHECK_EQ(errno, EBUSY);
   }
 }
 

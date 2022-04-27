@@ -540,7 +540,8 @@ bool LocalEnclave::CompleteRunRequest(RunRequest* req) {
   // N.B. we must do this even if we call Ghost::Commit() because the
   // the request could be committed asynchronously even in that case.
   while (!req->committed()) {
-    asm volatile("pause");
+    //asm volatile("pause");
+    asm volatile("yield");
   }
 
   ghost_txn_state state = req->state();
@@ -648,7 +649,8 @@ void RunRequest::Open(const RunRequestOptions& options) {
   // Wait for current owner to relinquish ownership of the sync_group txn.
   if (options.sync_group_owner != kSyncGroupNotOwned) {
     while (sync_group_owned()) {
-      asm volatile("pause");
+      asm volatile("yield");
+	//asm volatile("pause");
     }
   } else {
     CHECK(!sync_group_owned());

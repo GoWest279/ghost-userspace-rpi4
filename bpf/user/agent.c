@@ -186,6 +186,7 @@ out_error:
 // They are in the kernel repo.  We keep them in sync in bpf/user/agent.h.
 int agent_bpf_register(struct bpf_program *prog, int eat)
 {
+	printf("Here should assgin errnoi:eat:%d %d", BPF_GHOST_MAX_ATTACH_TYPE);
 	if (eat >= BPF_GHOST_MAX_ATTACH_TYPE) {
 		errno = ERANGE;
 		return -1;

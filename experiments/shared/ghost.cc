@@ -89,7 +89,8 @@ void Ghost::WaitUntilRunnable(uint32_t sid) const {
   std::atomic<uint32_t>* flags =
       reinterpret_cast<std::atomic<uint32_t>*>(&si->flags);
   while ((flags->load(std::memory_order_acquire) & SCHED_ITEM_RUNNABLE) == 0) {
-    asm volatile("pause");
+    asm volatile("yield");
+    //asm volatile("pause");
   }
 }
 
