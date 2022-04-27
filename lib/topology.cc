@@ -97,7 +97,8 @@ absl::flat_hash_map<int, CpuList> Topology::GetAllSiblings(
   for (uint32_t cpu = 0; cpu < num_cpus_; cpu++) {
     std::filesystem::path path =
         path_prefix / absl::StrFormat("cpu%d", cpu) / path_suffix;
-    std::ifstream stream(path);
+	std::cout << "Path= "<< path<<"\n";//printf("%s \n", path);    
+	std::ifstream stream(path);
     std::string sibling_list;
     std::getline(stream, sibling_list);
     CHECK(!sibling_list.empty());

@@ -266,8 +266,10 @@ void FifoScheduler::FifoSchedule(const Cpu& cpu,
     // the remote cpu. The 'on_cpu()' check below handles this scenario.
     //
     // See go/switchto-ghost for more details.
-    while (next->status_word.on_cpu()) asm volatile("pause");
-
+    while (next->status_word.on_cpu()) { 
+		//asm volatile("pause");
+		asm volatile("yield");
+	}
     req->Open({
         .target = next->gtid,
         .target_barrier = next->seqnum,
