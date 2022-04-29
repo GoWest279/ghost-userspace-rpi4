@@ -20,12 +20,12 @@
 #include "third_party/iovisor_bcc/bits.bpf.h"
 
 #define MAX_CPUS 256
-/* Keep this in sync with schedghostidle.c. */
+/* Keep this in sync with schedghostidle.c and bpf/user/agent.c */
 #define NR_SLOTS 25
 
-uint64_t nr_latches=0;
-uint64_t nr_bpf_latches=0;
-uint64_t nr_idle_to_bpf_latches=0;
+uint64_t nr_latches = 0;
+uint64_t nr_bpf_latches = 0;
+uint64_t nr_idle_to_bpf_latches = 0;
 
 /*
  * This array maps is racy, but it's fine.  Both the latcher and sched_switch

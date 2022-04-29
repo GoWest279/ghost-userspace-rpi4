@@ -51,6 +51,28 @@ class Topology;
 // ...
 class Cpu {
  public:
+  struct Raw {
+    int cpu;
+    int core;
+    int smt_idx;
+    std::vector<int> siblings;
+    std::vector<int> l3_siblings;
+    int numa_node;
+    // If any additional fields are added to this struct, then update the
+    // implementation of the override of the `==` operator below.
+
+    // std::vector overrides the `==` operator. Two std::vector's are equal if
+    // they are the same length and each element in one vector is equal to the
+    // element in the same index in the other vector.
+    bool operator==(const Raw& other) const {
+      return cpu == other.cpu && core == other.core &&
+             smt_idx == other.smt_idx && siblings == other.siblings &&
+             l3_siblings == other.l3_siblings && numa_node == other.numa_node;
+    }
+    bool operator!=(const Raw& other) const { return !(*this == other); }
+    bool operator<(const Raw& other) const { return cpu < other.cpu; }
+  };
+
   enum class UninitializedType { kUninitialized };
   explicit Cpu(UninitializedType) : rep_(nullptr) {}
 
@@ -147,6 +169,18 @@ class CpuList {
 
     for (uint32_t i = 0; i < size; i++) {
       cpus.push_back(GetNthCpu(i));
+    }
+    return cpus;
+  }
+
+  // Converts this `CpuList` to an `std::vector<int>` and returns the vector.
+  std::vector<int> ToIntVector() const {
+    std::vector<int> cpus;
+    const uint32_t size = Size();
+    cpus.reserve(size);
+
+    for (uint32_t i = 0; i < size; i++) {
+      cpus.push_back(GetNthCpu(i).id());
     }
     return cpus;
   }
@@ -409,7 +443,15 @@ class Topology {
  public:
   // These two functions use the private `Topology` constructor.
   friend Topology* MachineTopology();
-  friend Topology* TestTopology(const std::filesystem::path& test_directory);
+  friend void UpdateTestTopology(const std::filesystem::path& test_directory);
+  friend void UpdateCustomTopology(const std::vector<Cpu::Raw>& cpus);
+  friend Topology* CustomTopology();
+
+  // The number of CPUs in the test topology.
+  static constexpr uint32_t kNumTestCpus = 112;
+
+  // Export the topology into a raw format.
+  std::vector<Cpu::Raw> Export() const;
 
   CpuList EmptyCpuList() const { return CpuList(*this); }
 
@@ -520,9 +562,7 @@ class Topology {
   // constructor.
   struct InitHost {};
   struct InitTest {};
-
-  // The number of CPUs in the test topology.
-  static constexpr uint32_t kNumTestCpus = 112;
+  struct InitCustom {};
 
   // Constructs a Topology object representing the current machine.
   explicit Topology(InitHost);
@@ -530,7 +570,9 @@ class Topology {
   // below for the `TestTopology` function for a description of the topology.
   // `test_directory` is a path to scratch space in the file system that the
   // topology can use.
-  explicit Topology(InitTest, const std::filesystem::path& test_directory);
+  Topology(InitTest, const std::filesystem::path& test_directory);
+
+  Topology(InitCustom, std::vector<Cpu::Raw> cpus);
 
   void CreateCpuListsForNumaNodes() {
     for (const Cpu& cpu : all_cpus()) {
@@ -544,6 +586,10 @@ class Topology {
   absl::flat_hash_map<int, CpuList> GetAllSiblings(
       const std::filesystem::path& path_prefix,
       const std::string path_suffix) const;
+
+  // Check that all siblings are consistent. In other words, if CPUs x and y are
+  // siblings, then their siblings lists should be identical.
+  void CheckSiblings() const;
 
   // Gets the largest NUMA node index. Note that this is different from the
   // number of NUMA nodes, if indexing skips some offline or unavailable NUMA
@@ -585,7 +631,7 @@ class Topology {
   // The backing store for all CPUs in this topology.
   std::vector<Cpu::CpuRep> cpus_;
 
-  int highest_node_idx_;
+  int highest_node_idx_ = -1;
 
   CpuList cpus_on_node_[2] = {EmptyCpuList(), EmptyCpuList()};
 };
@@ -595,18 +641,30 @@ class Topology {
 // process dies.
 Topology* MachineTopology();
 
-// Returns a topology used by the topology tests. This topology has 112 CPUs,
-// 2 hardware threads per physical core (so there are 56 physical cores in
-// total), and 2 NUMA nodes. CPU 0 is co-located with CPU 56 on the same
-// physical core, CPU 1 is co-located with CPU 57, ..., and CPU 55 is
-// co-located with CPU 111. This is how Linux configures CPUs. Lastly, CPUs
-// 0-27 and 56-83 are on NUMA node 0 and CPUs 28-55 and 84-111 are on NUMA
-// node 1.
+// Creates a topology used by the topology tests and replaces the current test
+// topology if one exists. This topology has 112 CPUs, 2 hardware threads per
+// physical core (so there are 56 physical cores in total), and 2 NUMA nodes.
+// CPU 0 is co-located with CPU 56 on the same physical core, CPU 1 is
+// co-located with CPU 57, ..., and CPU 55 is co-located with CPU 111. This is
+// how Linux configures CPUs. Lastly, CPUs 0-27 and 56-83 are on NUMA node 0 and
+// CPUs 28-55 and 84-111 are on NUMA node 1.
 //
 // `test_directory` is a path to scratch space in the file system that the
-// topology can use. The pointer is never null and is owned by the
-// `TestTopology` function. The pointer lives until the process dies.
-Topology* TestTopology(const std::filesystem::path& test_directory);
+// topology can use.
+void UpdateTestTopology(const std::filesystem::path& test_directory);
+
+// Returns the test topology described above. The pointer is never null and is
+// owned by the `TestTopology` function. The pointer lives until the process
+// dies or `UpdateTestTopology()` is called again.
+Topology* TestTopology();
+
+// Creates a custom topology from `cpus`.
+void UpdateCustomTopology(const std::vector<Cpu::Raw>& cpus);
+
+// Returns the custom topology. The pointer is never null and is owned by the
+// `CustomTopology` function. The pointer lives until the process dies or
+// `UpdateCustomTopology()` is called again.
+Topology* CustomTopology();
 
 }  // namespace ghost
 

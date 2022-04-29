@@ -198,6 +198,7 @@ Topology::Topology(InitHost) : num_cpus_(std::thread::hardware_concurrency()) {
   // Calculate the node with highest idx. This can in turn be used to tell how
   // many nodes are in the system (ignoring hotplug).
   highest_node_idx_ = GetHighestNodeIdx("/sys/devices/system/node/possible");
+  CheckSiblings();
   CreateCpuListsForNumaNodes();
 }
 
@@ -349,6 +350,84 @@ Topology::Topology(InitTest, const std::filesystem::path& test_directory)
   }
 
   highest_node_idx_ = GetHighestNodeIdx(node_possible_path);
+  CheckSiblings();
+  CreateCpuListsForNumaNodes();
+}
+
+namespace {
+
+void CheckCustomTopology(const std::vector<Cpu::Raw>& cpus) {
+  CHECK(!cpus.empty());
+
+  int next = 0;
+  for (const Cpu::Raw& cpu : cpus) {
+    // Check that `cpus` contains all CPUs in 0, 1, 2, ..., N. `cpus` is already
+    // sorted when this function is called.
+    CHECK_EQ(cpu.cpu, next++);
+
+    // Check that all siblings are valid CPUs.
+    for (int s : cpu.siblings) {
+      CHECK_GE(s, 0);
+      CHECK_LT(s, cpus.size());
+    }
+    for (int s : cpu.l3_siblings) {
+      CHECK_GE(s, 0);
+      CHECK_LT(s, cpus.size());
+    }
+  }
+}
+
+}  // namespace
+
+void Topology::CheckSiblings() const {
+  for (const Cpu& cpu : all_cpus()) {
+    CHECK(cpu.siblings().IsSet(cpu));
+    for (const Cpu& sibling : cpu.siblings()) {
+      CHECK_EQ(cpu.siblings(), sibling.siblings());
+    }
+
+    CHECK(cpu.l3_siblings().IsSet(cpu));
+    for (const Cpu& sibling : cpu.l3_siblings()) {
+      CHECK_EQ(cpu.l3_siblings(), sibling.l3_siblings());
+    }
+  }
+}
+
+Topology::Topology(InitCustom, std::vector<Cpu::Raw> raw_cpus)
+    : num_cpus_(raw_cpus.size()) {
+  // Consumers assume MAX_CPUS invariant.
+  CHECK_LE(num_cpus_, MAX_CPUS);
+
+  std::sort(raw_cpus.begin(), raw_cpus.end());
+  CheckCustomTopology(raw_cpus);
+
+  cpus_.resize(num_cpus_);
+
+  // Fill in the CPU IDs first so that they can be accessed out-of-order when
+  // filling in `rep->core` below.
+  for (int i = 0; i < num_cpus_; i++) {
+    Cpu::CpuRep* rep = &cpus_[i];
+    rep->cpu = i;
+  }
+
+  for (int i = 0; i < num_cpus_; i++) {
+    const Cpu::Raw& raw_cpu = raw_cpus[i];
+    Cpu::CpuRep* rep = &cpus_[i];
+
+    rep->core = raw_cpu.core;
+    rep->smt_idx = raw_cpu.smt_idx;
+    rep->numa_node = raw_cpu.numa_node;
+    highest_node_idx_ = std::max(rep->numa_node, highest_node_idx_);
+
+    rep->siblings = std::make_unique<CpuList>(*this);
+    *rep->siblings = ToCpuList(raw_cpu.siblings);
+    rep->l3_siblings = std::make_unique<CpuList>(*this);
+    *rep->l3_siblings = ToCpuList(raw_cpu.l3_siblings);
+
+    all_cpus_.Set(i);
+  }
+
+  CheckSiblings();
   CreateCpuListsForNumaNodes();
 }
 
@@ -390,15 +469,56 @@ CpuList Topology::ParseCpuStr(const std::string& str) const {
   return cpus;
 }
 
+std::vector<Cpu::Raw> Topology::Export() const {
+  std::vector<Cpu::Raw> to_export;
+
+  for (const Cpu& cpu : all_cpus()) {
+    to_export.push_back({.cpu = cpu.id(),
+                         .core = cpu.core(),
+                         .smt_idx = cpu.smt_idx(),
+                         .siblings = cpu.siblings().ToIntVector(),
+                         .l3_siblings = cpu.l3_siblings().ToIntVector(),
+                         .numa_node = cpu.numa_node()});
+  }
+  return to_export;
+}
+
 Topology* MachineTopology() {
   static Topology* topology = new Topology(Topology::InitHost{});
   return topology;
 }
 
-Topology* TestTopology(const std::filesystem::path& test_directory) {
-  static Topology* topology =
-      new Topology(Topology::InitTest{}, test_directory);
-  return topology;
+namespace {
+
+Topology* test_topology = nullptr;
+Topology* custom_topology = nullptr;
+
+}  // namespace
+
+void UpdateTestTopology(const std::filesystem::path& test_directory) {
+  if (test_topology) {
+    delete test_topology;
+  }
+  test_topology = new Topology(Topology::InitTest{}, test_directory);
+}
+
+Topology* TestTopology() {
+  // Make sure `UpdateTestTopology()` was already called.
+  CHECK_NE(test_topology, nullptr);
+  return test_topology;
+}
+
+void UpdateCustomTopology(const std::vector<Cpu::Raw>& cpus) {
+  if (custom_topology) {
+    delete custom_topology;
+  }
+  custom_topology = new Topology(Topology::InitCustom{}, cpus);
+}
+
+Topology* CustomTopology() {
+  // Make sure `UpdateCustomTopology()` was already called.
+  CHECK_NE(custom_topology, nullptr);
+  return custom_topology;
 }
 
 }  // namespace ghost
