@@ -1,1 +1,1 @@
-sudo apt install libnuma-dev
+sudo apt install libnuma-dev clang llvm

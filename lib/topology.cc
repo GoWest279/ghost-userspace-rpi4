@@ -162,7 +162,8 @@ Topology::Topology(InitHost) : num_cpus_(std::thread::hardware_concurrency()) {
   CHECK_EQ(siblings.size(), num_cpus_);
 
   absl::flat_hash_map<int, CpuList> l3_siblings =
-      GetAllSiblings("/sys/devices/system/cpu", "cache/index3/shared_cpu_list");
+      GetAllSiblings("/sys/devices/system/cpu", "cache/index2/shared_cpu_list");
+      //GetAllSiblings("/sys/devices/system/cpu", "cache/index3/shared_cpu_list");
   CHECK_EQ(l3_siblings.size(), num_cpus_);
   for (int i = 0; i < num_cpus_; i++) {
     Cpu::CpuRep* rep = &cpus_[i];
@@ -309,7 +310,8 @@ Topology::Topology(InitTest, const std::filesystem::path& test_directory)
   absl::flat_hash_map<int, CpuList> siblings =
       GetAllSiblings(siblings_prefix, "topology/thread_siblings");
   absl::flat_hash_map<int, CpuList> l3_siblings =
-      GetAllSiblings(siblings_prefix, "cache/index3/shared_cpu_list");
+      GetAllSiblings(siblings_prefix, "cache/index2/shared_cpu_list");
+      //GetAllSiblings(siblings_prefix, "cache/index3/shared_cpu_list");
   CHECK_EQ(l3_siblings.size(), num_cpus_);
 
   const std::filesystem::path node_possible_path =
