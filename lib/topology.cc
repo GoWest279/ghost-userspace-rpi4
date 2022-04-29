@@ -333,11 +333,10 @@ Topology::Topology(InitTest, const std::filesystem::path& test_directory,
       GetAllSiblings(siblings_prefix, "topology/thread_siblings");
   CHECK_EQ(siblings.size(), num_cpus_);
   absl::flat_hash_map<int, CpuList> l3_siblings =
-<<<<<<< HEAD
-      GetAllSiblings(siblings_prefix, "cache/index2/shared_cpu_list");
-      //GetAllSiblings(siblings_prefix, "cache/index3/shared_cpu_list");
+      //GetAllSiblings(siblings_prefix, "cache/index2/shared_cpu_list");
+      GetAllSiblings(siblings_prefix, "cache/index3/shared_cpu_list");
   CHECK_EQ(l3_siblings.size(), num_cpus_);
-=======
+
       GetAllSiblings(siblings_prefix, "cache/index3/shared_cpu_list");
   // Not all microarchitectures have an L3 cache, so vary the CHECK based on
   // whether there is an L3 cache.
@@ -346,7 +345,6 @@ Topology::Topology(InitTest, const std::filesystem::path& test_directory,
   } else {
     CHECK(l3_siblings.empty());
   }
->>>>>>> b/main
 
   const std::filesystem::path node_possible_path =
       SetupTestNodePossible(test_directory);
