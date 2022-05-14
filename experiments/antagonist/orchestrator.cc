@@ -49,6 +49,7 @@ Orchestrator::Orchestrator(Options opts)
   CHECK_GE(options_.work_share, 0.0);
   CHECK_LE(options_.work_share, 1.0);
   for (int cpu : options_.cpus) {
+	  std::cout<<"cpu:"<<cpu<<" kbTCPU"<<kBackgroundThreadCpu<<std::endl;
     CHECK_NE(cpu, kBackgroundThreadCpu);
   }
 }

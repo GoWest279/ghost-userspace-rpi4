@@ -32,13 +32,17 @@ ABSL_FLAG(double, work_share, 1.0,
           "example, if 'work_share' is 0.5, each thread tries to target 50%% "
           "of cycles on a CPU. Note that 'work_share' must be greater than or "
           "equal to 0.0 and less than or equal to 1.0. (default: 1.0)");
-ABSL_FLAG(size_t, num_threads, 8,
+ABSL_FLAG(size_t, num_threads, 4,
           "The number of worker threads to use (default: 8 threads).");
 // It is preferred that the 'cpus' flag be an 'std::vector<int>', but the only
 // vector type that Abseil supports is 'std::vector<std::string>>'.
+//ABSL_FLAG(std::vector<std::string>, cpus,
+//          std::vector<std::string>({"0", "1", "2", "3", "4", "5", "6",
+//                                    "7"}),
+//          "The CPUs to affine threads to. Only threads scheduled by CFS are "
+//          "affined. (default: CPUs 10-17).");
 ABSL_FLAG(std::vector<std::string>, cpus,
-          std::vector<std::string>({"10", "11", "12", "13", "14", "15", "16",
-                                    "17"}),
+          std::vector<std::string>({ "2", "3", "4", "5"}),
           "The CPUs to affine threads to. Only threads scheduled by CFS are "
           "affined. (default: CPUs 10-17).");
 ABSL_FLAG(absl::Duration, experiment_duration, absl::InfiniteDuration(),
@@ -137,7 +141,7 @@ void SetTimer(absl::Duration duration) {
 // Initializes the application, runs the experiment, and exits.
 int main(int argc, char* argv[]) {
   ghost::Notification* exit = RegisterSignalHandlers();
-
+ //ghost_test::Ghost ghost_(1, 1);
   // Affine the main thread to CPU
   // 'ghost_test::Orchestrator::kBackgroundThreadCpu'. Also, since we affine the
   // main thread here before any background threads are spawned (e.g., the
