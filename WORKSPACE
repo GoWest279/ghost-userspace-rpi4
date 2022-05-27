@@ -31,13 +31,16 @@ http_archive(
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 rules_foreign_cc_dependencies()
 
-http_archive(
-  name = "com_google_absl",
-  url = "https://github.com/abseil/abseil-cpp/archive/2e9532cc6c701a8323d0cffb468999ab804095ab.zip",
-  sha256 = "542dee3a6692cf7851329f4f9f4de463bb6305c7e0439946d4ba750852e4d71c",
-  strip_prefix = "abseil-cpp-2e9532cc6c701a8323d0cffb468999ab804095ab",
+#http_archive(
+#  name = "com_google_absl",
+#  url = "https://github.com/abseil/abseil-cpp/archive/2e9532cc6c701a8323d0cffb468999ab804095ab.zip",
+#  sha256 = "542dee3a6692cf7851329f4f9f4de463bb6305c7e0439946d4ba750852e4d71c",
+#  strip_prefix = "abseil-cpp-2e9532cc6c701a8323d0cffb468999ab804095ab",
+#)
+local_repository(
+	name = "com_google_absl",
+	path = "abseil-cpp/"
 )
-
 http_archive(
   name = "com_google_googletest",
   url = "https://github.com/google/googletest/archive/011959aafddcd30611003de96cfd8d7a7685c700.zip",

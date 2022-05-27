@@ -904,3 +904,18 @@ cc_test(
         "@com_google_googletest//:gtest",
     ],
 )
+
+cc_test(
+    name = "local_test",
+    size = "small",
+    srcs = ["experiments/test0/main.cc"],
+    copts = compiler_flags,
+    deps = [
+        ":agent",
+        ":ghost",
+	":base",
+	":experiments_shared",
+	"@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest",
+    ],
+)
